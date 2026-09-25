@@ -13,12 +13,12 @@ team:
   track: "AI"                          # AI | DevOps | Sustainability | Open (closest fit for a forensic-AI assistant)
   lead:
     name: "Kavan Hada"
-    email: "TODO: add Kavan's email"   # TODO — fill in before pushing (required by CI)
+    email: "kavanhada1903@gmail.com"
   members:
     - name: "Aryan Sagar"
-      email: "TODO: add Aryan's email" # TODO — fill in before pushing
+      email: "dksagar1949@gmail.com"
     - name: "Dhruvang Upadhyay"
-      email: "TODO: add Dhruvang's email" # TODO — fill in before pushing
+      email: "dhruvangupadhyay10ascent@gmail.com"
 
 submission:
   title: "DocuVerity — AI Forgery Examination Assistant"

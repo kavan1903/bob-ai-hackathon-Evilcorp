@@ -1,17 +1,13 @@
 # 🚀 DocuVerity — AI Forgery Examination Assistant
 
-> ⚠️ **Team emails below still need to be filled in before pushing (required by CI).**
-
----
-
 ## 👥 Team
 
 | Field | Value |
 |---|---|
 | **Team Name** | Evilcorp |
 | **Track** | AI |
-| **Team Lead** | Kavan Hada — TODO: add email |
-| **Members** | Aryan Sagar (TODO: add email), Dhruvang Upadhyay (TODO: add email) |
+| **Team Lead** | Kavan Hada — kavanhada1903@gmail.com |
+| **Members** | Aryan Sagar (dksagar1949@gmail.com), Dhruvang Upadhyay (dhruvangupadhyay10ascent@gmail.com) |
 
 ---
 
