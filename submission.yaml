@@ -1,0 +1,80 @@
+# =============================================================================
+# HACKATHON SUBMISSION METADATA
+# =============================================================================
+# Instructions:
+#   - Fill in ALL required fields (marked with # REQUIRED)
+#   - Optional fields can be left as empty strings ""
+#   - Do NOT rename this file — the evaluation pipeline reads it by name
+#   - Use double quotes around all string values
+# =============================================================================
+
+team:
+  name: "Evilcorp"
+  track: "AI"                          # AI | DevOps | Sustainability | Open (closest fit for a forensic-AI assistant)
+  lead:
+    name: "Kavan Hada"
+    email: "TODO: add Kavan's email"   # TODO — fill in before pushing (required by CI)
+  members:
+    - name: "Aryan Sagar"
+      email: "TODO: add Aryan's email" # TODO — fill in before pushing
+    - name: "Dhruvang Upadhyay"
+      email: "TODO: add Dhruvang's email" # TODO — fill in before pushing
+
+submission:
+  title: "DocuVerity — AI Forgery Examination Assistant"
+
+  problem_statement: >
+    Forensic document examiners in India face a growing caseload of forged
+    certificates, degrees, property documents, and FIRs (3,000+ fake degree
+    cases flagged by the Education Ministry in 2022 alone), but have no
+    structured, standards-linked workflow to turn raw observations into a
+    defensible, court-admissible opinion quickly.
+
+  solution_summary: >
+    DocuVerity is a Bob-powered guided examination workflow: an examiner
+    enters structured observations about a suspected forged document (font
+    inconsistencies, signature mismatches, paper anomalies, ink spread,
+    metadata flags), and Bob classifies the anomaly type, scores forgery
+    confidence, maps findings to recognized examination standards, and
+    drafts a structured expert opinion report ready for review.
+
+  key_features:
+    - "Structured observation intake for 5 forgery indicator categories (typography, signature, substrate, ink, digital metadata)"
+    - "Rule-based anomaly classification with a weighted forgery-confidence score (0-100)"
+    - "Automatic mapping of findings to questioned-document examination standards"
+    - "Auto-drafted, section-by-section expert opinion report exportable as Markdown/PDF"
+    - "IBM Bob MCP integration so the entire workflow runs conversationally, not just as a form"
+
+  tech_stack:
+    languages: ["Python"]
+    frameworks: ["MCP (Model Context Protocol) Python SDK"]
+    ibm_technologies: ["IBM Bob", "watsonx.ai (optional report-language polishing)"]
+    databases: []
+    other: ["GitHub Actions"]
+
+  what_we_are_most_proud_of: >
+    The 4-stage MCP tool pipeline (classify -> score -> map-to-standard ->
+    draft-report) makes Bob's reasoning load-bearing and inspectable at each
+    step, rather than a single opaque prompt — judges can see exactly what
+    Bob contributed at each stage of the forensic workflow.
+
+  known_limitations: >
+    Anomaly classification and standard-mapping use transparent, documented
+    heuristics rather than a trained forensic ML model — this was a
+    deliberate scope choice for hackathon timeframes and is disclosed to
+    examiners in the generated report. The standard references included are
+    illustrative and require validation by a certified examiner before real
+    court use.
+
+# =============================================================================
+# ARTIFACT LOCATIONS
+# These paths are relative to the repo root. Only change if you moved files.
+# =============================================================================
+artifacts:
+  source_code: "src/"
+  setup_guide: "docs/setup-guide.md"
+  architecture_doc: "docs/architecture.md"
+  demo_video: "demo/demo-video-link.txt"   # URL to hosted video (YouTube, Loom, Box)
+  live_demo: "demo/live-demo-url.txt"      # URL to deployed demo (optional)
+  screenshots: "demo/screenshots/"
+  presentation: "presentation/"
