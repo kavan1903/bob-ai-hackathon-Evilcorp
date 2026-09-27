@@ -61,6 +61,20 @@ Then register it with IBM Bob as an MCP server (stdio transport) pointing at thi
 
 Bob will call `classify_anomaly_tool`, `score_forgery_confidence_tool`, `map_to_examination_standard_tool`, and `draft_expert_report_tool` in sequence.
 
+## Connecting to IBM Bob
+
+This repo already includes a project-level MCP config at `.bob/mcp.json`, pointing Bob at `src/mcp_server/server.py` via stdio. Open this repo folder in Bob and it should pick up the `docuverity` server automatically.
+
+If it doesn't show up (e.g. Bob only reads `.bob/mcp.json` per-workspace and needs a restart, or your Bob version expects the global file instead):
+1. Open Bob → click the **3 dots next to the gear icon** (top-right of the chat panel) → **MCP Servers**.
+2. Either confirm `docuverity` is listed and enabled, or manually add it with:
+   - **Command:** `python`
+   - **Args:** `["server.py"]`
+   - **Working directory:** the absolute path to `src/mcp_server` in your clone
+3. Ask Bob something like: *"I have a suspected forged property document — the signature stroke pattern doesn't match the exemplar, and the paper fluoresces differently under UV. Classify this and draft a report."* Bob should call the 4 `docuverity` tools in sequence.
+
+Reference: [Using MCP in Bob](https://bob.ibm.com/docs/ide/configuration/mcp/mcp-in-bob).
+
 ## Running Tests
 
 No automated test suite yet — see `known_limitations` in `submission.yaml`. The `--demo` mode above serves as a smoke test of the full pipeline.

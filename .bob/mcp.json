@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "docuverity": {
+      "command": "python",
+      "args": ["server.py"],
+      "cwd": "src/mcp_server",
+      "env": {},
+      "alwaysAllow": [
+        "classify_anomaly_tool",
+        "score_forgery_confidence_tool",
+        "map_to_examination_standard_tool",
+        "draft_expert_report_tool"
+      ],
+      "disabled": false
+    }
+  }
+}
