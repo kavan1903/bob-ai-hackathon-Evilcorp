@@ -70,6 +70,7 @@ No automated test suite yet — see `known_limitations` in `submission.yaml`. Th
 | Issue | Solution |
 |---|---|
 | `ModuleNotFoundError: No module named 'mcp'` | Run `pip install -r requirements.txt` inside `src/mcp_server/`. Note: `--demo` mode works even without the `mcp` package installed. |
+| `ModuleNotFoundError: No module named 'mcp.server.fastmcp'` | You have `mcp` v2.x installed, which renamed `FastMCP`. Run `pip install "mcp<2.0.0"` to get the compatible v1 API this code uses. |
 | `ModuleNotFoundError: No module named 'forensics'` | Run `server.py` from inside `src/mcp_server/` (relative imports depend on the working directory). |
 | watsonx.ai call fails / times out | This is expected if `WATSONX_API_KEY` / `WATSONX_PROJECT_ID` aren't set — the pipeline falls back to the unpolished report automatically. Check `src/mcp_server/watsonx_polish.py` if you want to debug a configured key. |
 | Garbled `—`/`→` characters in Windows terminal output | Cosmetic only (console codepage) — files are UTF-8; safe to ignore, or run `chcp 65001` first. |
