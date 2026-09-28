@@ -94,3 +94,7 @@ logs/
 .terraform/
 *.tfstate
 *.tfstate.backup
+
+# DocuVerity UI working files
+src/ui/uploads/
+reports/ui/

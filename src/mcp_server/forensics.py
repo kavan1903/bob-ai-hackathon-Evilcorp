@@ -1,151 +1,200 @@
-"""Core forensic reasoning logic for DocuVerity.
+"""DocuVerity examination pipeline.
 
-Kept dependency-free and framework-agnostic on purpose: server.py wraps these
-functions as MCP tools, but they can be unit-tested or called directly.
+examine_case(case) runs the full workflow:
+    PDF metadata (optional) -> merge with examiner findings -> LR evaluation
+    -> anomaly classification -> standards mapping -> recommended further checks
+render_report(case, result) turns the result into a court-style draft report.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Optional
+from datetime import date
+from pathlib import Path
 
-INDICATOR_CATEGORIES = [
-    "font_inconsistency",
-    "signature_mismatch",
-    "paper_anomaly",
-    "ink_spread_anomaly",
-    "metadata_flag",
-]
+from evaluation import classify, evaluate
+from indicators import CATEGORIES, DOCUMENT_TYPES, INDICATORS, checklist_for
+from pdf_metadata import analyze_pdf
+from standards import standards_for
 
-# Weight reflects how strongly each indicator, alone, tends to correlate with
-# forgery in questioned-document practice. These are illustrative defaults —
-# a real deployment should have these calibrated by a certified examiner.
-INDICATOR_WEIGHTS = {
-    "font_inconsistency": 15,
-    "signature_mismatch": 30,
-    "paper_anomaly": 20,
-    "ink_spread_anomaly": 15,
-    "metadata_flag": 20,
-}
-
-ANOMALY_CATEGORY_MAP = {
-    ("signature_mismatch",): "Signature Forgery",
-    ("font_inconsistency",): "Typographic Forgery",
-    ("paper_anomaly",): "Physical Substrate Tampering",
-    ("ink_spread_anomaly",): "Physical Substrate Tampering",
-    ("metadata_flag",): "Digital Metadata Tampering",
-}
-
-EXAMINATION_STANDARDS = {
-    "Signature Forgery": [
-        "ASTM E2290 - Standard Guide for Examination of Handwritten Items",
-        "SWGDOC Standard for Examination of Signatures",
-    ],
-    "Typographic Forgery": [
-        "ASTM E2325 - Standard Guide for Nonintrusive Examination of Documents",
-    ],
-    "Physical Substrate Tampering": [
-        "ASTM E1789 - Standard Guide for Writing Ink Identification",
-        "ASTM E444 - Standard Guide for Scope of Work of Forensic Document Examiners",
-    ],
-    "Digital Metadata Tampering": [
-        "SWGDE Best Practices for Digital Evidence Examination",
-    ],
-    "Composite / Multiple Indicators": [
-        "ASTM E444 - Standard Guide for Scope of Work of Forensic Document Examiners",
-        "SWGDOC Standard for Examination of Signatures",
-        "SWGDE Best Practices for Digital Evidence Examination",
-    ],
-}
+HIGH_VALUE_LR = 10.0
+REPORTS_DIR = Path(__file__).resolve().parents[2] / "reports"
 
 
-@dataclass
-class Observation:
-    """A single examiner-reported indicator flag."""
-
-    category: str  # one of INDICATOR_CATEGORIES
-    detail: str = ""
-    severity: str = "moderate"  # low | moderate | high
+def merge_findings(examiner: list[dict], machine: list[dict]) -> list[dict]:
+    """Examiner findings take precedence over machine-derived ones for the same indicator."""
+    merged = {f["indicator"]: f for f in machine}
+    merged.update({f["indicator"]: f for f in examiner})
+    return list(merged.values())
 
 
-@dataclass
-class ObservationSet:
-    document_id: str
-    observations: list[Observation] = field(default_factory=list)
-
-    def flagged_categories(self) -> list[str]:
-        return sorted({o.category for o in self.observations})
-
-
-SEVERITY_MULTIPLIER = {"low": 0.5, "moderate": 1.0, "high": 1.3}
-
-
-def classify_anomaly(obs_set: ObservationSet) -> str:
-    """Classify the dominant anomaly type from a set of flagged indicators."""
-    flagged = obs_set.flagged_categories()
-    if not flagged:
-        return "No Anomaly Detected"
-    if len(flagged) > 1:
-        return "Composite / Multiple Indicators"
-    return ANOMALY_CATEGORY_MAP.get(tuple(flagged), "Composite / Multiple Indicators")
+def recommended_examinations(document_type: str, findings: list[dict]) -> list[dict]:
+    examined = {f["indicator"] for f in findings}
+    recs = []
+    for item in checklist_for(document_type):
+        ind = INDICATORS[item["indicator"]]
+        if ind.id not in examined and ind.lr_present >= HIGH_VALUE_LR:
+            recs.append({"indicator": ind.id, "question": ind.question,
+                         "why": f"High diagnostic value (LR {ind.lr_present:g} if present) and not yet examined"})
+    return recs
 
 
-def score_forgery_confidence(obs_set: ObservationSet) -> dict:
-    """Return a 0-100 confidence score plus a per-indicator breakdown."""
-    breakdown = {}
-    total = 0.0
-    for obs in obs_set.observations:
-        weight = INDICATOR_WEIGHTS.get(obs.category, 10)
-        multiplier = SEVERITY_MULTIPLIER.get(obs.severity, 1.0)
-        contribution = min(weight * multiplier, 100)
-        breakdown[obs.category] = round(contribution, 1)
-        total += contribution
-    score = round(min(total, 100), 1)
-    return {"score": score, "breakdown": breakdown}
+def examine_case(case: dict) -> dict:
+    document_type = case.get("document_type", "generic")
+    pdf_report = None
+    machine_findings: list[dict] = []
+    if case.get("pdf_file"):
+        pdf_report = analyze_pdf(
+            case["pdf_file"],
+            stated_issue_date=case.get("stated_issue_date", ""),
+            expected_producer=case.get("expected_producer", ""),
+            generated_on_demand=case.get("generated_on_demand", False),
+        )
+        machine_findings = pdf_report["findings"]
+
+    image_report = None
+    if case.get("image_file"):
+        from image_checker import analyze_image
+        image_report = analyze_image(case["image_file"])
+        if "error" in image_report:
+            raise ValueError(f"Could not read image: {image_report['error']}")
+        machine_findings = machine_findings + image_report["findings"]
+
+    findings = merge_findings(case.get("findings", []), machine_findings)
+    evaluation = evaluate(findings)
+    categories = sorted({INDICATORS[c.indicator].category for c in evaluation.contributions if c.lr > 1})
+
+    return {
+        "case_id": case.get("case_id", "UNSPECIFIED"),
+        "document_type": document_type,
+        "findings": findings,
+        "pdf_metadata": pdf_report,
+        "image_analysis": image_report,
+        "evaluation": evaluation.to_dict(),
+        "classification": classify(evaluation),
+        "standards": standards_for(categories),
+        "recommended_examinations": recommended_examinations(document_type, findings),
+    }
 
 
-def map_to_examination_standard(anomaly_type: str) -> list[str]:
-    return EXAMINATION_STANDARDS.get(
-        anomaly_type, ["No standard mapping available for this anomaly type"]
-    )
-
-
-def draft_expert_report(
-    obs_set: ObservationSet,
-    anomaly_type: str,
-    confidence: dict,
-    standards: list[str],
-    examiner_name: Optional[str] = None,
-) -> str:
-    """Render a structured expert opinion report as Markdown."""
-    lines = [
-        f"# Expert Opinion — Document {obs_set.document_id}",
-        "",
-        f"**Examiner:** {examiner_name or 'TBD'}",
-        f"**Anomaly Classification:** {anomaly_type}",
-        f"**Forgery Confidence Score:** {confidence['score']} / 100",
-        "",
-        "## Observations",
+def _summary(result: dict) -> str:
+    ev = result["evaluation"]
+    cls = result["classification"]
+    present = [c for c in ev["contributions"] if c["status"] == "present"]
+    absent = [c for c in ev["contributions"] if c["status"] == "absent"]
+    parts = [
+        f"{len(present) + len(absent)} examinations were recorded: {len(present)} anomalies found "
+        f"and {len(absent)} checks with no anomaly.",
+        f"The combined likelihood ratio is approximately {ev['combined_lr']:,.1f} "
+        f"(log10 LR {ev['combined_log10_lr']:+.2f}). {ev['verbal_conclusion']}",
     ]
-    for obs in obs_set.observations:
-        lines.append(f"- **{obs.category}** (severity: {obs.severity}): {obs.detail}")
+    if cls["primary_mechanism"]:
+        parts.append(f"The findings are most consistent with: {cls['anomaly_type'].lower()}.")
+    if result["recommended_examinations"]:
+        parts.append(f"{len(result['recommended_examinations'])} high-value examination(s) are "
+                     f"recommended before the opinion is finalised.")
+    return " ".join(parts)
 
-    lines += ["", "## Confidence Breakdown"]
-    for category, contribution in confidence["breakdown"].items():
-        lines.append(f"- {category}: +{contribution}")
 
-    lines += ["", "## Relevant Examination Standards"]
-    for standard in standards:
-        lines.append(f"- {standard}")
+def render_report(case: dict, result: dict, summary: str | None = None) -> str:
+    ev = result["evaluation"]
+    cls = result["classification"]
+    examiner = case.get("examiner", {})
+    doc_label = DOCUMENT_TYPES.get(result["document_type"], DOCUMENT_TYPES["generic"])["label"]
+    pdf = result["pdf_metadata"]
 
-    lines += [
+    L = [
+        "# Forensic Document Examination Report",
         "",
-        "## Disclaimer",
-        (
-            "This report was drafted with the assistance of an AI-guided "
-            "workflow (DocuVerity) using documented, rule-based heuristics. "
-            "It is a first-pass draft only and must be reviewed, validated, "
-            "and signed off by a certified forensic document examiner before "
-            "any court submission."
-        ),
+        "> **DRAFT** - generated by DocuVerity. Not valid until reviewed, amended as necessary "
+        "and signed by the reporting examiner.",
+        "",
+        "| Field | Detail |",
+        "|---|---|",
+        f"| Case ID | {result['case_id']} |",
+        f"| Report date | {date.today().isoformat()} |",
+        f"| Examiner | {examiner.get('name', 'TBD')}, {examiner.get('designation', '')} |",
+        f"| Submitting agency | {case.get('submitted_by', 'TBD')} |",
+        f"| Document type | {doc_label} |",
+        f"| Item description | {case.get('document_description', '')} |",
+        f"| Stated issue date | {case.get('stated_issue_date', 'Not stated')} |",
     ]
-    return "\n".join(lines)
+    if pdf:
+        L.append(f"| Electronic file | {pdf['file']} ({pdf['size_bytes']:,} bytes) |")
+        L.append(f"| SHA-256 | `{pdf['sha256']}` |")
+
+    L += ["", "## 1. Summary", "", summary or _summary(result), "",
+          "## 2. Propositions", "",
+          "- **Hp:** The questioned document is forged or has been altered.",
+          "- **Hd:** The questioned document is genuine and unaltered.", "",
+          "## 3. Examinations Performed", "",
+          "| Category | Examination | Result | Confidence | Note |",
+          "|---|---|---|---|---|"]
+    for c in ev["contributions"]:
+        result_txt = "Anomaly observed" if c["status"] == "present" else "No anomaly"
+        L.append(f"| {c['category']} | {c['label']} | {result_txt} | {c['confidence']} | {c['note']} |")
+
+    if pdf:
+        L += ["", "## 4. Electronic File Examination", "",
+              f"- Revisions in file: **{pdf['revisions']}**" + (" (linearized)" if pdf["linearized"] else ""),
+              f"- Digital signature present: {'yes' if pdf['has_digital_signature'] else 'no'}",
+              f"- Producer: {pdf['info'].get('Producer', '-')}; Creator: {pdf['info'].get('Creator', '-')}",
+              f"- CreationDate: {pdf['info'].get('CreationDate', '-')}; ModDate: {pdf['info'].get('ModDate', '-')}"]
+        if len(pdf["info_history"]) > 1:
+            L.append("- Metadata history across revisions:")
+            for i, h in enumerate(pdf["info_history"], 1):
+                L.append(f"  - Revision {i}: Producer '{h.get('Producer', '-')}', ModDate {h.get('ModDate', '-')}")
+        for n in pdf["notes"]:
+            L.append(f"- Note: {n}")
+
+    L += ["", "## 5. Evaluation", "",
+          "Each finding is assigned a likelihood ratio (LR): how much more probable the finding is if "
+          "the document is forged than if it is genuine. Correlated findings within the same category "
+          "are damped (strongest counts fully, each further one at half the previous weight).", "",
+          "| Finding | Result | LR | Weight | log10 contribution |",
+          "|---|---|---|---|---|"]
+    for c in ev["contributions"]:
+        L.append(f"| {c['label']} | {c['status']} | {c['lr']:g} | {c['damping_weight']:g} | "
+                 f"{c['log10_contribution']:+.2f} |")
+    L += ["", f"**Combined LR:** {ev['combined_lr']:,.2f} (log10 {ev['combined_log10_lr']:+.2f}). "
+          f"**Triage score** (neutral prior, for case prioritisation only): {ev['triage_score']}/100.", "",
+          "## 6. Classification of Anomaly", "",
+          f"**{cls['anomaly_type']}**", ""]
+    for m in ev["mechanisms"]:
+        L.append(f"- {m['description']} (log10 support {m['log10_support']:+.2f})")
+
+    L += ["", "## 7. Conclusion", "", ev["verbal_conclusion"], "",
+          "## 8. Recommended Further Examinations", ""]
+    if result["recommended_examinations"]:
+        for r in result["recommended_examinations"]:
+            L.append(f"- {r['question']} _({r['why']})_")
+    else:
+        L.append("- None - all high-value examinations for this document type have been recorded.")
+
+    L += ["", "## 9. Applicable Standards", ""]
+    L += [f"- {s}" for s in result["standards"]["examination_standards"]]
+    L += ["", "**Legal provisions (verify applicability before use):**", ""]
+    L += [f"- {s}" for s in result["standards"]["legal_provisions_to_verify"]]
+
+    L += ["", "## 10. Limitations", "",
+          "- Likelihood ratios are illustrative defaults, not calibrated against casework data.",
+          "- The evaluation assumes limited dependence between categories; within-category dependence "
+          "is handled by damping only.",
+          "- The opinion is only as reliable as the examiner's recorded observations.",
+          "- Citations of standards and statutes are reference pointers and must be verified.", "",
+          "## 11. Declaration", "",
+          f"I, {examiner.get('name', '________________')}, have examined the item described above and "
+          "the opinion expressed is my own, based on the examinations recorded in this report.", "",
+          "Signature: ____________________    Date: ____________"]
+    return "\n".join(L) + "\n"
+
+
+def save_report(case_id: str, markdown: str, out_dir: Path | None = None) -> Path:
+    out = out_dir or REPORTS_DIR
+    out.mkdir(parents=True, exist_ok=True)
+    safe_id = "".join(ch if ch.isalnum() or ch in "-_" else "_" for ch in case_id)
+    path = out / f"{safe_id}.md"
+    path.write_text(markdown, encoding="utf-8")
+    return path
+
+
+__all__ = ["examine_case", "render_report", "save_report", "merge_findings",
+           "recommended_examinations", "CATEGORIES"]

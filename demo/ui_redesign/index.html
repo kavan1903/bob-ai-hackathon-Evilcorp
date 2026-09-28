@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocuVerity | Premium Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="top-nav">
+        <div class="logo">
+            <div class="logo-icon"></div>
+            <div class="logo-text">
+                <h1>DocuVerity</h1>
+                <p>AI Forgery Examination Assistant</p>
+            </div>
+        </div>
+        <div class="nav-info">IBM Bob × NFSU Hackathon · Team Evilcorp</div>
+    </header>
+
+    <main class="dashboard">
+        <section class="left-panel">
+            <!-- Case Details -->
+            <div class="glass-card section-card">
+                <div class="card-header">
+                    <span class="step-badge">1</span>
+                    <h2>Case Details</h2>
+                </div>
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label>Document type</label>
+                        <select><option>Degree / marksheet / academic certificate</option></select>
+                    </div>
+                    <div class="input-group">
+                        <label>Stated issue date</label>
+                        <input type="date" value="2023-06-15">
+                    </div>
+                    <div class="input-group">
+                        <label>Case ID</label>
+                        <input type="text" value="AUTO-AE6B36" disabled>
+                    </div>
+                    <div class="input-group">
+                        <label>Examiner</label>
+                        <input type="text" placeholder="Your name">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Questioned File -->
+            <div class="glass-card section-card">
+                <div class="card-header">
+                    <span class="step-badge">2</span>
+                    <h2>Questioned File</h2>
+                </div>
+                <div class="file-upload">
+                    <div class="upload-icon">📄</div>
+                    <div class="upload-text">
+                        <strong>tampered_certificate.pdf</strong>
+                        <span>Mock diploma certificate - issued 15-06-2023</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Observations -->
+            <div class="glass-card section-card">
+                <div class="card-header">
+                    <span class="step-badge">3</span>
+                    <h2>Examiner Observations</h2>
+                    <span class="obs-count">2 anomalies recorded</span>
+                </div>
+                <ul class="obs-list">
+                    <li>Digital file & metadata <span>2 flagged</span></li>
+                    <li>Typography & printing <span>1 flagged</span></li>
+                    <li>Signatures & handwriting <span>Clear</span></li>
+                    <li>Paper & security features <span>Clear</span></li>
+                </ul>
+                <button class="primary-btn glow-btn">Generate Expert Report</button>
+            </div>
+        </section>
+
+        <section class="right-panel">
+            <!-- Verdict -->
+            <div class="glass-card verdict-card forged">
+                <div class="verdict-header">
+                    <span>VERDICT · CASE UI-AE6B36</span>
+                </div>
+                <h1 class="verdict-title text-glow-red">LIKELY FORGED / ALTERED</h1>
+                <p class="verdict-desc">The findings provide moderate support for the proposition that the document is forged or altered, rather than genuine.</p>
+                
+                <div class="confidence-bar">
+                    <div class="bar-labels">
+                        <span>Genuine</span>
+                        <span>Neutral</span>
+                        <span>Forged</span>
+                    </div>
+                    <div class="bar-track">
+                        <div class="bar-fill red-gradient" style="width: 85%;"></div>
+                        <div class="bar-glow" style="left: 85%;"></div>
+                    </div>
+                    <div class="bar-footer">Likelihood ratio 84.16 · Triage score 96.8/100</div>
+                </div>
+
+                <div class="stats-row">
+                    <div class="stat-box red-accent"><h2>5</h2><p>Anomalies</p></div>
+                    <div class="stat-box green-accent"><h2>0</h2><p>Consistent</p></div>
+                    <div class="stat-box neutral-accent"><h2>8</h2><p>Missing checks</p></div>
+                </div>
+            </div>
+
+            <!-- Details -->
+            <div class="findings-container">
+                <h3 class="section-title">Key Findings</h3>
+                
+                <div class="finding-card">
+                    <div class="finding-head">
+                        <h4>File created or modified after stated issue date</h4>
+                        <span class="lr-badge red-badge">20.0× if forged</span>
+                    </div>
+                    <p class="finding-sub">Digital file & metadata · points to digital editing</p>
+                    
+                    <div class="finding-compare">
+                        <div class="compare-box found">
+                            <h5>❌ FOUND</h5>
+                            <p>File modified 2024-02-03, after stated issue date 2023-06-15</p>
+                        </div>
+                        <div class="compare-box expected">
+                            <h5>✅ GENUINE SHOWS</h5>
+                            <p>File was created on or before the stated issue date.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="finding-card">
+                    <div class="finding-head">
+                        <h4>Producer/creator is an editing tool</h4>
+                        <span class="lr-badge red-badge">6.0× if forged</span>
+                    </div>
+                    <p class="finding-sub">Digital file & metadata · points to digital editing</p>
+                    <div class="finding-compare">
+                        <div class="compare-box found">
+                            <h5>❌ FOUND</h5>
+                            <p>Software: iLovePDF</p>
+                        </div>
+                        <div class="compare-box expected">
+                            <h5>✅ GENUINE SHOWS</h5>
+                            <p>Producer is the issuer's own certificate system.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </main>
+</body>
+</html>

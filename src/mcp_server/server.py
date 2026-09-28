@@ -1,10 +1,9 @@
 """DocuVerity MCP server.
 
-Exposes 4 tools to IBM Bob over MCP:
-  - classify_anomaly
-  - score_forgery_confidence
-  - map_to_examination_standard
-  - draft_expert_report
+Exposes tools to IBM Bob over MCP:
+  - analyze_image_tool
+  - analyze_pdf_tool
+  - examine_case_tool
 
 Run modes:
   python server.py            # start as an MCP server (stdio transport) for Bob
@@ -22,14 +21,9 @@ try:
 except ImportError:
     pass
 
-from forensics import (
-    Observation,
-    ObservationSet,
-    classify_anomaly,
-    score_forgery_confidence,
-    map_to_examination_standard,
-    draft_expert_report,
-)
+from forensics import examine_case, render_report
+from image_checker import analyze_image
+from pdf_metadata import analyze_pdf
 from watsonx_polish import polish_report
 
 try:
@@ -40,98 +34,80 @@ except ImportError:
     MCP_AVAILABLE = False
 
 
-def _build_observation_set(document_id: str, observations: list[dict]) -> ObservationSet:
-    return ObservationSet(
-        document_id=document_id,
-        observations=[
-            Observation(
-                category=o["category"],
-                detail=o.get("detail", ""),
-                severity=o.get("severity", "moderate"),
-            )
-            for o in observations
-        ],
-    )
-
-
-def run_full_pipeline(document_id: str, observations: list[dict], examiner_name: str | None = None) -> dict:
-    """Runs all 4 stages end-to-end. Used by both the demo and the MCP tools."""
-    obs_set = _build_observation_set(document_id, observations)
-    anomaly_type = classify_anomaly(obs_set)
-    confidence = score_forgery_confidence(obs_set)
-    standards = map_to_examination_standard(anomaly_type)
-    report = draft_expert_report(obs_set, anomaly_type, confidence, standards, examiner_name)
-    report = polish_report(report)
-    return {
-        "anomaly_type": anomaly_type,
-        "confidence": confidence,
-        "standards": standards,
-        "report": report,
-    }
-
-
 def _run_demo() -> None:
-    sample_observations = [
-        {
-            "category": "signature_mismatch",
-            "detail": "Stroke pattern and pen pressure inconsistent with exemplar signatures",
-            "severity": "high",
-        },
-        {
-            "category": "paper_anomaly",
-            "detail": "Substrate fluoresces differently under UV compared to genuine stock",
-            "severity": "moderate",
-        },
-        {
-            "category": "metadata_flag",
-            "detail": "PDF creation timestamp postdates the document's stated issue date",
-            "severity": "high",
-        },
-    ]
-    result = run_full_pipeline("DOC-2026-0142", sample_observations, examiner_name="Demo Examiner")
     print("=" * 70)
     print("DocuVerity — demo run")
     print("=" * 70)
-    print(f"Anomaly type:        {result['anomaly_type']}")
-    print(f"Confidence score:    {result['confidence']['score']} / 100")
-    print(f"Score breakdown:     {result['confidence']['breakdown']}")
-    print(f"Mapped standards:    {result['standards']}")
+    
+    # 1. We would run check_image_tool or check_pdf_tool, but here we just
+    # construct a case manually.
+    
+    case = {
+        "case_id": "DEMO-CASE-2026",
+        "document_type": "identity_document",
+        "document_description": "Suspected forged ID card",
+        "submitted_by": "Demo Mode",
+        "examiner": {"name": "Demo Examiner", "designation": "System"},
+        "findings": [
+            {"indicator": "font_family_mismatch", "status": "present", "confidence": "high", "note": "Font differs from template"},
+            {"indicator": "spacing_irregular", "status": "present", "confidence": "moderate", "note": "Kerning is off"}
+        ]
+    }
+    
+    print("Running examine_case...")
+    result = examine_case(case)
+    
+    print("Drafting report...")
+    report = render_report(case, result)
+    
+    # Polish report if watsonx is configured
+    try:
+        report = polish_report(report)
+    except Exception as e:
+        pass # Ignore polish errors in demo if API key isn't set
+        
     print("-" * 70)
-    print(result["report"])
+    print(report)
 
 
 def _build_mcp_server() -> "FastMCP":
     mcp = FastMCP("docuverity")
 
     @mcp.tool()
-    def classify_anomaly_tool(document_id: str, observations: list[dict]) -> str:
-        """Classify the forgery anomaly type from a list of flagged observations.
+    def check_image_tampering_tool(image_path: str) -> dict:
+        """Analyzes an image file for tampering using Error Level Analysis and EXIF checks."""
+        return analyze_image(image_path)
 
-        Each observation is a dict: {category, detail, severity}. category must
-        be one of: font_inconsistency, signature_mismatch, paper_anomaly,
-        ink_spread_anomaly, metadata_flag.
+    @mcp.tool()
+    def check_pdf_metadata_tool(pdf_path: str, stated_issue_date: str = "") -> dict:
+        """Analyzes a PDF file for hidden edits, re-saves, and creation date anomalies."""
+        return analyze_pdf(pdf_path, stated_issue_date=stated_issue_date)
+
+    @mcp.tool()
+    def examine_case_tool(case_id: str, document_type: str, findings: list[dict], pdf_file: str = "") -> str:
         """
-        obs_set = _build_observation_set(document_id, observations)
-        return classify_anomaly(obs_set)
-
-    @mcp.tool()
-    def score_forgery_confidence_tool(document_id: str, observations: list[dict]) -> dict:
-        """Score forgery confidence (0-100) for a document given flagged observations."""
-        obs_set = _build_observation_set(document_id, observations)
-        return score_forgery_confidence(obs_set)
-
-    @mcp.tool()
-    def map_to_examination_standard_tool(anomaly_type: str) -> list[str]:
-        """Map an anomaly type to relevant questioned-document examination standards."""
-        return map_to_examination_standard(anomaly_type)
-
-    @mcp.tool()
-    def draft_expert_report_tool(
-        document_id: str, observations: list[dict], examiner_name: str = ""
-    ) -> str:
-        """Run the full pipeline and draft a structured expert opinion report."""
-        result = run_full_pipeline(document_id, observations, examiner_name or None)
-        return result["report"]
+        Run the full forensic evaluation pipeline and draft a structured expert opinion report.
+        
+        findings: list of dicts with keys 'indicator', 'status', 'confidence', 'note'.
+        indicator must map to one of the known INDICATORS (e.g., 'font_family_mismatch', 'signature_identical_overlay', etc).
+        """
+        case = {
+            "case_id": case_id,
+            "document_type": document_type,
+            "pdf_file": pdf_file,
+            "findings": findings,
+            "examiner": {"name": "Bob", "designation": "AI Assistant"}
+        }
+        
+        result = examine_case(case)
+        report = render_report(case, result)
+        
+        try:
+            report = polish_report(report)
+        except Exception:
+            pass
+            
+        return report
 
     return mcp
 

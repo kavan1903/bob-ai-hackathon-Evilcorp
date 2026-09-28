@@ -1,0 +1,69 @@
+{
+  "documents": [
+    {
+      "file": "deg_genuine.png",
+      "expected": [],
+      "note": "Genuine"
+    },
+    {
+      "file": "deg_genuine_q80.jpg",
+      "expected": [],
+      "note": "Genuine, JPEG q80"
+    },
+    {
+      "file": "deg_genuine_small.png",
+      "expected": [],
+      "note": "Genuine, downscaled to 70%"
+    },
+    {
+      "file": "deg_font_swap.png",
+      "expected": [
+        "typography"
+      ],
+      "note": "CGPA line retyped in Verdana"
+    },
+    {
+      "file": "deg_font_swap_times.png",
+      "expected": [
+        "typography"
+      ],
+      "note": "CGPA line retyped in Times New Roman"
+    },
+    {
+      "file": "deg_ink_blue.png",
+      "expected": [
+        "ink"
+      ],
+      "note": "Registration number in blue ink"
+    },
+    {
+      "file": "deg_ink_spread.png",
+      "expected": [
+        "ink"
+      ],
+      "note": "Issue date feathered"
+    },
+    {
+      "file": "deg_erasure.png",
+      "expected": [
+        "substrate"
+      ],
+      "note": "CGPA erased and rewritten"
+    },
+    {
+      "file": "deg_signature_simulated.png",
+      "expected": [
+        "signature"
+      ],
+      "note": "Registrar signature simulated"
+    },
+    {
+      "file": "deg_edited_exif.jpg",
+      "expected": [
+        "digital"
+      ],
+      "note": "Saved from GIMP"
+    }
+  ],
+  "exemplar": "sig_exemplar_B.png"
+}

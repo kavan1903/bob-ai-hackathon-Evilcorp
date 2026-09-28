@@ -1,0 +1,214 @@
+{
+  "documents": [
+    {
+      "file": "id_genuine.png",
+      "expected": [],
+      "region": null,
+      "note": "Clean original"
+    },
+    {
+      "file": "id_genuine_q90.jpg",
+      "expected": [],
+      "region": null,
+      "note": "Clean original, JPEG, scanner software in EXIF"
+    },
+    {
+      "file": "id_font_swap.png",
+      "expected": [
+        "typography"
+      ],
+      "region": [
+        296,
+        218,
+        434,
+        245
+      ],
+      "note": "Date of birth retyped in Times New Roman"
+    },
+    {
+      "file": "id_ink_colour.png",
+      "expected": [
+        "ink"
+      ],
+      "region": [
+        296,
+        283,
+        486,
+        310
+      ],
+      "note": "ID number written in black instead of navy"
+    },
+    {
+      "file": "id_ink_spread.png",
+      "expected": [
+        "ink"
+      ],
+      "region": [
+        296,
+        349,
+        598,
+        380
+      ],
+      "note": "Address ink feathered / spread"
+    },
+    {
+      "file": "id_ink_spread_subtle.png",
+      "expected": [
+        "ink"
+      ],
+      "region": [
+        296,
+        349,
+        598,
+        380
+      ],
+      "note": "Address ink slightly feathered (subtle)"
+    },
+    {
+      "file": "id_ink_colour_subtle.png",
+      "expected": [
+        "ink"
+      ],
+      "region": [
+        296,
+        283,
+        486,
+        310
+      ],
+      "note": "ID number in a slightly different blue-black ink (subtle)"
+    },
+    {
+      "file": "id_erasure.png",
+      "expected": [
+        "substrate"
+      ],
+      "region": [
+        292,
+        412,
+        560,
+        456
+      ],
+      "note": "Validity date erased (lighter, smoother patch) and rewritten"
+    },
+    {
+      "file": "id_erasure_subtle.png",
+      "expected": [
+        "substrate"
+      ],
+      "region": [
+        292,
+        412,
+        560,
+        456
+      ],
+      "note": "Validity date erased, patch close to paper tone (subtle)"
+    },
+    {
+      "file": "id_signature_simulated.png",
+      "expected": [
+        "signature"
+      ],
+      "region": [
+        300,
+        480,
+        640,
+        600
+      ],
+      "note": "Signature simulated (tremor, slant, proportions)"
+    },
+    {
+      "file": "id_signature_other.png",
+      "expected": [
+        "signature"
+      ],
+      "region": [
+        300,
+        480,
+        640,
+        600
+      ],
+      "note": "Signature of a different person"
+    },
+    {
+      "file": "id_edited_exif.jpg",
+      "expected": [
+        "digital"
+      ],
+      "region": null,
+      "note": "Saved from Photoshop (EXIF Software tag)"
+    },
+    {
+      "file": "id_composite.png",
+      "expected": [
+        "typography",
+        "ink"
+      ],
+      "region": null,
+      "note": "Font swap + ink colour change"
+    },
+    {
+      "file": "id_font_swap_q85.jpg",
+      "expected": [
+        "typography"
+      ],
+      "region": [
+        296,
+        218,
+        434,
+        245
+      ],
+      "note": "Font swap, JPEG q85"
+    },
+    {
+      "file": "cert_cover_retype.pdf",
+      "expected": [
+        "typography",
+        "digital"
+      ],
+      "region": null,
+      "note": "White box over 61.4% with 91.4% typed in Times, saved as incremental update"
+    },
+    {
+      "file": "cert_cover_retype_flat.pdf",
+      "expected": [
+        "typography"
+      ],
+      "region": null,
+      "note": "Same cover-and-retype, re-saved as one clean revision with original metadata"
+    },
+    {
+      "file": "cert_genuine.pdf",
+      "expected": [],
+      "region": null,
+      "note": "Genuine certificate PDF"
+    }
+  ],
+  "signature_pairs": [
+    {
+      "questioned": "sig_questioned_A_genuine.png",
+      "exemplar": "sig_exemplar_A.png",
+      "same_writer": true
+    },
+    {
+      "questioned": "sig_questioned_A_genuine2.png",
+      "exemplar": "sig_exemplar_A.png",
+      "same_writer": true
+    },
+    {
+      "questioned": "sig_questioned_A_simulated.png",
+      "exemplar": "sig_exemplar_A.png",
+      "same_writer": false
+    },
+    {
+      "questioned": "sig_questioned_B_other.png",
+      "exemplar": "sig_exemplar_A.png",
+      "same_writer": false
+    },
+    {
+      "questioned": "sig_questioned_A_identical.png",
+      "exemplar": "sig_exemplar_A.png",
+      "same_writer": true,
+      "identical_copy": true
+    }
+  ]
+}

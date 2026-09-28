@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DocuVerity</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #eef1f5; --panel: #ffffff; --panel-2: #f6f8fb; --ink: #151a24; --muted: #5f6878; --line: #dde2ea;
+    --accent: #3558d6; --accent-ink: #ffffff; --accent-bg: #e8edfd;
+    --bad: #c0362c; --bad-bg: #fdeceb; --bad-line: #f3c4bf;
+    --warn: #9a5b00; --warn-bg: #fff3dd; --warn-line: #f1d7a6;
+    --neu: #4d5667; --neu-bg: #eceff4; --neu-line: #d3d9e3;
+    --good: #1c7a3d; --good-bg: #e6f5eb; --good-line: #b9e2c6;
+    --shadow: 0 1px 2px rgba(16,24,40,.06), 0 4px 16px rgba(16,24,40,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --bg: #0e1116; --panel: #161b23; --panel-2: #1c222c; --ink: #e7eaf0; --muted: #9ba4b4; --line: #2a313d;
+      --accent: #6f8cff; --accent-ink: #0b0f18; --accent-bg: #1d2644;
+      --bad: #ff8b80; --bad-bg: #331a19; --bad-line: #5c2a26;
+      --warn: #ffc56b; --warn-bg: #33270f; --warn-line: #5a4418;
+      --neu: #c1c8d4; --neu-bg: #222833; --neu-line: #353d4b;
+      --good: #7fd69c; --good-bg: #13291c; --good-line: #22472f;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.25);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--ink); padding-inline: 16px;
+         font: 14px/1.5 "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; }
+  button, input, select { font: inherit; color: inherit; }
+
+  .topbar { max-width: 1320px; margin: 0 auto; padding: 18px 0 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .logo { width: 38px; height: 38px; border-radius: 10px; background: var(--accent); display: grid; place-items: center; flex: none; }
+  .brand h1 { margin: 0; font-size: 19px; letter-spacing: -.01em; }
+  .brand p { margin: 0; color: var(--muted); font-size: 13px; }
+  .tag { margin-left: auto; font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; background: var(--panel); }
+
+  .layout { max-width: 1320px; margin: 0 auto 32px; display: grid; gap: 18px;
+            grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: start; }
+  @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
+
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); margin-bottom: 14px; }
+  .card-h { display: flex; align-items: center; gap: 10px; padding: 14px 16px 0; }
+  .step { width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: var(--accent-ink);
+          font-size: 12px; font-weight: 700; display: grid; place-items: center; flex: none; }
+  .card-h h2 { margin: 0; font-size: 15px; }
+  .card-h .hint { margin-left: auto; font-size: 12px; color: var(--muted); }
+  .card-b { padding: 12px 16px 16px; }
+
+  .fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .fields .wide { grid-column: span 2; }
+  .fields .full { grid-column: 1 / -1; }
+  @media (max-width: 640px) { .fields { grid-template-columns: 1fr; } .fields .wide { grid-column: auto; } }
+  label.f { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+  input[type=text], input[type=date], select {
+    width: 100%; height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2);
+  }
+  input:focus, select:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .switch { display: flex; align-items: center; gap: 8px; min-height: 36px; font-size: 13px; cursor: pointer; }
+  .switch input { width: 16px; height: 16px; accent-color: var(--accent); }
+
+  .drop { border: 2px dashed var(--line); border-radius: 10px; padding: 18px; display: flex; align-items: center; gap: 14px;
+          cursor: pointer; background: var(--panel-2); transition: border-color .15s; }
+  .drop:hover, .drop.drag { border-color: var(--accent); }
+  .drop .ico { width: 40px; height: 40px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); display: grid; place-items: center; flex: none; }
+  .drop .t1 { font-weight: 600; word-break: break-all; }
+  .drop .t2 { font-size: 12px; color: var(--muted); }
+  .drop.has-file { border-style: solid; border-color: var(--accent); background: var(--accent-bg); }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; font-size: 12px; color: var(--muted); }
+  .chip { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 4px 12px; cursor: pointer; font-size: 12px; }
+  .chip:hover { border-color: var(--accent); }
+
+  .progress { height: 6px; border-radius: 999px; background: var(--panel-2); border: 1px solid var(--line); overflow: hidden; margin: 2px 0 12px; display: flex; }
+  .progress > div { height: 100%; transition: width .2s; }
+  .progress .p-man { background: var(--accent); }
+  .progress .p-auto { background: repeating-linear-gradient(45deg, var(--accent), var(--accent) 3px, transparent 3px, transparent 6px); }
+  details.cat { border: 1px solid var(--line); border-radius: 10px; margin-bottom: 10px; background: var(--panel); }
+  details.cat > summary { list-style: none; cursor: pointer; padding: 10px 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  details.cat > summary::-webkit-details-marker { display: none; }
+  details.cat > summary .chev { transition: transform .15s; color: var(--muted); }
+  details.cat[open] > summary .chev { transform: rotate(90deg); }
+  details.cat > summary .name { font-weight: 600; }
+  .counts { margin-left: auto; display: flex; gap: 6px; font-size: 11px; flex-wrap: wrap; }
+  .pill { border-radius: 999px; padding: 1px 8px; border: 1px solid; white-space: nowrap; }
+  .pill.bad { color: var(--bad); background: var(--bad-bg); border-color: var(--bad-line); }
+  .pill.good { color: var(--good); background: var(--good-bg); border-color: var(--good-line); }
+  .pill.neu { color: var(--neu); background: var(--neu-bg); border-color: var(--neu-line); }
+  .pill.auto { color: var(--accent); background: var(--accent-bg); border-color: var(--accent); }
+  .cat-actions { padding: 0 12px 8px; display: flex; gap: 12px; font-size: 12px; }
+  .link { background: none; border: none; padding: 0; color: var(--accent); cursor: pointer; font-size: 12px; }
+
+  .item { border-top: 1px solid var(--line); padding: 10px 12px; }
+  .item.s-present { background: var(--bad-bg); }
+  .item.s-absent { background: var(--good-bg); }
+  .item .row1 { display: flex; gap: 12px; align-items: flex-start; }
+  .item .q { flex: 1; font-size: 13px; }
+  .item .gen { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .item .autonote { font-size: 12px; margin-top: 4px; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex: none; background: var(--panel); }
+  .seg button { border: none; background: transparent; padding: 5px 10px; font-size: 12px; cursor: pointer; color: var(--muted); white-space: nowrap; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button:hover { color: var(--ink); }
+  .seg button.on[data-v=""] { background: var(--neu-bg); color: var(--ink); font-weight: 600; }
+  .seg button.on[data-v=present] { background: var(--bad); color: #fff; font-weight: 600; }
+  .seg button.on[data-v=absent] { background: var(--good); color: #fff; font-weight: 600; }
+  @media (prefers-color-scheme: dark) { .seg button.on[data-v=present], .seg button.on[data-v=absent] { color: #0b0f18; } }
+  @media (max-width: 640px) { .item .row1 { flex-direction: column; } }
+  .row2 { display: flex; gap: 8px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+  .row2 .lbl { font-size: 12px; color: var(--muted); }
+  .conf button { border: 1px solid var(--line); background: var(--panel); padding: 2px 9px; font-size: 12px; border-radius: 999px; cursor: pointer; }
+  .conf button.on { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  .row2 input { flex: 1; min-width: 160px; height: 30px; font-size: 12px; background: var(--panel); }
+
+  .actionbar { position: sticky; bottom: 0; z-index: 5; background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+               box-shadow: var(--shadow); padding: 12px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .actionbar .sum { font-size: 13px; color: var(--muted); }
+  .actionbar .sum b { color: var(--ink); }
+  .btn { border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); border-radius: 9px; padding: 10px 20px; font-weight: 700; cursor: pointer; }
+  .actionbar .btn { margin-left: auto; }
+  .btn:disabled { opacity: .6; cursor: wait; }
+  .btn.ghost { background: transparent; color: var(--accent); padding: 6px 12px; font-weight: 600; }
+  .btn.small { padding: 6px 12px; font-size: 13px; }
+
+  .results { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow: auto; }
+  @media (max-width: 980px) { .results { position: static; max-height: none; } }
+  .empty-state { padding: 48px 24px; text-align: center; color: var(--muted); }
+  .empty-state .big { font-size: 16px; color: var(--ink); font-weight: 600; margin: 10px 0 4px; }
+  .spinner { width: 28px; height: 28px; border: 3px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .stale { margin: 12px 16px 0; padding: 8px 12px; border-radius: 8px; background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn-line);
+           font-size: 13px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .stale .btn { margin-left: auto; padding: 4px 12px; font-size: 12px; }
+  [hidden] { display: none !important; }
+
+  .verdict { border-radius: 12px; padding: 16px; border: 1px solid; margin: 16px 16px 12px; }
+  .verdict.forged { background: var(--bad-bg); border-color: var(--bad-line); color: var(--bad); }
+  .verdict.suspicious { background: var(--warn-bg); border-color: var(--warn-line); color: var(--warn); }
+  .verdict.inconclusive { background: var(--neu-bg); border-color: var(--neu-line); color: var(--neu); }
+  .verdict.genuine { background: var(--good-bg); border-color: var(--good-line); color: var(--good); }
+  .verdict .kicker { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .85; }
+  .verdict .label { font-size: 21px; font-weight: 800; letter-spacing: -.01em; line-height: 1.25; margin: 2px 0 6px; }
+  .verdict .concl { color: var(--ink); font-size: 13px; }
+  .gauge { margin-top: 14px; }
+  .gauge .bar { position: relative; height: 10px; border-radius: 999px;
+                background: linear-gradient(90deg, var(--good) 0%, var(--neu-line) 50%, var(--bad) 100%); }
+  .gauge .mark { position: absolute; top: -5px; width: 4px; height: 20px; border-radius: 2px; background: var(--ink); transform: translateX(-2px); box-shadow: 0 0 0 2px var(--panel); }
+  .gauge .ends { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .facts { font-size: 12px; color: var(--muted); margin-top: 8px; }
+
+  .tabs { display: flex; gap: 4px; margin: 0 16px; border-bottom: 1px solid var(--line); }
+  .tabs button { border: none; background: none; padding: 10px 12px; font-weight: 600; color: var(--muted); cursor: pointer;
+                 border-bottom: 2px solid transparent; margin-bottom: -1px; display: flex; gap: 6px; align-items: center; }
+  .tabs button.on { color: var(--accent); border-bottom-color: var(--accent); }
+  .tabs .n { font-size: 11px; border-radius: 999px; padding: 0 7px; background: var(--neu-bg); color: var(--neu); }
+
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 16px 6px; }
+  @media (max-width: 520px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
+  .tile { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--panel-2); }
+  .tile .n { font-size: 22px; font-weight: 800; line-height: 1.1; }
+  .tile .l { font-size: 12px; color: var(--muted); }
+  .tile.bad .n { color: var(--bad); } .tile.good .n { color: var(--good); } .tile.warn .n { color: var(--warn); } .tile.acc .n { color: var(--accent); }
+
+  .sec { padding: 12px 16px 4px; }
+  .sec h3 { margin: 0 0 8px; font-size: 13px; }
+  .type { display: inline-block; font-size: 13px; font-weight: 600; border: 1px solid var(--line); background: var(--panel-2); border-radius: 8px; padding: 6px 10px; }
+  .why { border: 1px solid var(--line); border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+  .why .head { padding: 10px 12px; display: flex; gap: 10px; align-items: flex-start; }
+  .why .head .t { font-weight: 600; font-size: 13px; }
+  .why .head .m { font-size: 12px; color: var(--muted); }
+  .why .x { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--bad); white-space: nowrap; }
+  .cmp { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--line); }
+  @media (max-width: 520px) { .cmp { grid-template-columns: 1fr; } }
+  .cmp > div { padding: 8px 12px; font-size: 13px; word-break: break-word; }
+  .cmp .found { background: var(--bad-bg); }
+  .cmp .real { background: var(--good-bg); border-left: 1px solid var(--line); }
+  .cmp .k { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 2px; }
+  .cmp .found .k { color: var(--bad); } .cmp .real .k { color: var(--good); }
+  ul.list { list-style: none; margin: 0; padding: 0; }
+  ul.list li { display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+  ul.list li:last-child { border-bottom: none; }
+  ul.list .ic { flex: none; font-weight: 700; width: 14px; text-align: center; }
+  ul.list .ok { color: var(--good); } ul.list .todo { color: var(--warn); } ul.list .bad { color: var(--bad); } ul.list .info { color: var(--accent); } ul.list .skip { color: var(--muted); }
+  ul.list .sub { color: var(--muted); font-size: 12px; word-break: break-all; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .error { margin: 16px; background: var(--bad-bg); color: var(--bad); border: 1px solid var(--bad-line); padding: 12px; border-radius: 10px; }
+
+  .rep-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 12px 16px 0; }
+  .rep-bar .muted { font-size: 12px; flex-basis: 100%; }
+  .rep-frame { display: block; width: calc(100% - 32px); margin: 12px 16px 16px; height: 70vh; min-height: 420px;
+               border: 1px solid var(--line); border-radius: 10px; background: #eef1f5; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo" aria-hidden="true">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5"/><path d="M14 3v5h5"/><path d="M19 8v3"/>
+      <circle cx="16.5" cy="16.5" r="3"/><path d="m21 21-2.4-2.4"/>
+    </svg>
+  </div>
+  <div class="brand">
+    <h1>DocuVerity</h1>
+    <p>Guided forgery examination with evidence-weighted verdicts and a draft expert report</p>
+  </div>
+  <span class="tag">IBM Bob × NFSU Hackathon · Team Evilcorp</span>
+</header>
+
+<div class="layout">
+  <div>
+    <section class="card">
+      <div class="card-h"><span class="step">1</span><h2>Case details</h2></div>
+      <div class="card-b fields">
+        <div class="wide"><label class="f" for="docType">Document type</label><select id="docType"></select></div>
+        <div><label class="f" for="issueDate">Stated issue date</label><input type="date" id="issueDate"></div>
+        <div><label class="f" for="caseId">Case ID</label><input type="text" id="caseId" placeholder="Auto-generated"></div>
+        <div><label class="f" for="examiner">Examiner</label><input type="text" id="examiner" placeholder="Your name"></div>
+        <div><label class="f" for="producer">Issuer software</label><input type="text" id="producer" placeholder="Optional"></div>
+        <div class="full"><label class="switch"><input type="checkbox" id="onDemand"> E-certificate is generated at download (e.g. vaccination certificate)</label></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-h"><span class="step">2</span><h2>Questioned file</h2><span class="hint">Checked automatically when added</span></div>
+      <div class="card-b">
+        <div class="drop" id="drop" role="button" tabindex="0">
+          <div class="ico" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M20 16v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/></svg>
+          </div>
+          <div><div class="t1" id="dropT1"></div><div class="t2" id="dropT2"></div></div>
+        </div>
+        <input type="file" id="file" accept=".pdf,image/*" hidden>
+        <div class="chips">Try a sample:
+          <button type="button" class="chip" data-sample="tampered_pdf">Tampered certificate</button>
+          <button type="button" class="chip" data-sample="genuine_pdf">Genuine certificate</button>
+          <button type="button" class="chip" data-sample="">Remove file</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-h"><span class="step">3</span><h2>Examiner observations</h2><span class="hint" id="progTxt"></span></div>
+      <div class="card-b">
+        <div class="progress" title="Solid: recorded by you · striped: answered automatically from the file"><div class="p-man" id="progMan"></div><div class="p-auto" id="progAuto"></div></div>
+        <div id="checklist"></div>
+      </div>
+    </section>
+
+    <div class="actionbar">
+      <div class="sum" id="sumTxt"></div>
+      <button class="btn" id="run">Examine document</button>
+    </div>
+  </div>
+
+  <aside class="card results" id="results" aria-live="polite"></aside>
+</div>
+
+<script>
+const $ = (s, root = document) => root.querySelector(s);
+const el = (tag, attrs = {}, ...kids) => {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") e.className = v; else if (k === "text") e.textContent = v;
+    else if (k.startsWith("on")) e[k] = v; else e.setAttribute(k, v);
+  }
+  kids.flat().forEach(k => k != null && e.append(k));
+  return e;
+};
+const DROP_HINT = ["Drop a PDF or image here, or click to browse", "All automatic file checks run as soon as it is added"];
+
+let META = null, fileData = null, sample = "", last = null, tab = "summary", stale = false, openAuto = false;
+const state = {};   // indicator -> {status, confidence, note}
+let auto = {};      // indicator -> {status, note} from the last file analysis
+
+const items = () => META.checklists[$("#docType").value];
+
+async function init() {
+  META = await (await fetch("/api/meta")).json();
+  const sel = $("#docType");
+  for (const [k, label] of Object.entries(META.document_types)) sel.append(el("option", { value: k, text: label }));
+  sel.value = "degree_certificate";
+  sel.onchange = () => { renderChecklist(); markStale(); };
+  ["issueDate", "producer", "onDemand"].forEach(id => $("#" + id).addEventListener("change", markStale));
+  setDrop(...DROP_HINT, false);
+  renderChecklist();
+  renderEmpty();
+  const t = location.hash.match(/tab=(summary|checks|report)/);
+  if (t) tab = t[1];
+  const m = location.hash.match(/sample=(\w+)/);
+  if (m) pickSample(m[1]);
+}
+
+function markStale() {
+  if (!last) return;
+  stale = true;
+  const box = $("#staleBox");
+  if (box) box.hidden = false;
+}
+
+function renderEmpty() {
+  $("#results").replaceChildren(el("div", { class: "empty-state" },
+    el("div", { class: "big", text: "No examination yet" }),
+    el("div", { text: "Add a file to run the automatic checks, record your observations, and the verdict, every check performed and the full report appear here." }),
+    el("div", { style: "margin-top:14px" }, el("button", { class: "btn ghost", text: "Run the tampered-certificate sample", onclick: () => pickSample("tampered_pdf") }))));
+}
+
+function setStatus(id, v) { state[id].status = v; renderChecklist(); markStale(); }
+
+function renderChecklist() {
+  const box = $("#checklist");
+  const openCats = new Set([...box.querySelectorAll("details[open]")].map(d => d.dataset.cat));
+  const first = box.children.length === 0;
+  box.replaceChildren();
+  const groups = {};
+  for (const it of items()) (groups[it.category] ||= []).push(it);
+
+  Object.entries(groups).forEach(([cat, list], idx) => {
+    list.forEach(it => state[it.indicator] ||= { status: "", confidence: "moderate", note: "" });
+    const eff = i => state[i.indicator].status || auto[i.indicator]?.status || "";
+    const nBad = list.filter(i => eff(i) === "present").length;
+    const nGood = list.filter(i => eff(i) === "absent").length;
+    const nAuto = list.filter(i => !state[i.indicator].status && auto[i.indicator]).length;
+    const det = el("details", { class: "cat", "data-cat": cat });
+    if (first ? idx === 0 : openCats.has(cat) || (openAuto && nAuto)) det.open = true;
+    det.append(el("summary", {},
+      el("span", { class: "chev", text: "▸" }), el("span", { class: "name", text: cat }),
+      el("span", { class: "counts" },
+        nAuto ? el("span", { class: "pill auto", text: `${nAuto} auto` }) : null,
+        nBad ? el("span", { class: "pill bad", text: `${nBad} anomal${nBad > 1 ? "ies" : "y"}` }) : null,
+        nGood ? el("span", { class: "pill good", text: `${nGood} genuine` }) : null,
+        el("span", { class: "pill neu", text: `${list.length - nBad - nGood} unchecked` }))));
+    det.append(el("div", { class: "cat-actions" },
+      el("button", { type: "button", class: "link", text: "Mark unchecked as genuine",
+        onclick: () => { list.forEach(i => { if (!eff(i)) state[i.indicator].status = "absent"; }); renderChecklist(); markStale(); } }),
+      el("button", { type: "button", class: "link", text: "Reset section",
+        onclick: () => { list.forEach(i => state[i.indicator].status = ""); renderChecklist(); markStale(); } })));
+
+    list.forEach(it => {
+      const s = state[it.indicator], a = auto[it.indicator];
+      const shown = s.status || (a ? a.status : "");
+      const seg = el("div", { class: "seg", role: "group" });
+      [["", a ? "Use auto" : "Not checked"], ["present", "✗ Anomaly"], ["absent", "✓ Genuine"]].forEach(([v, label]) =>
+        seg.append(el("button", { type: "button", "data-v": v, class: s.status === v ? "on" : "", text: label,
+                                  "aria-pressed": String(s.status === v), onclick: () => setStatus(it.indicator, v) })));
+      const q = el("div", { class: "q" }, it.question, el("div", { class: "gen", text: "Genuine: " + it.genuine }));
+      if (a) q.append(el("div", { class: "autonote" },
+        el("span", { class: "pill auto", text: s.status ? "Auto (overridden)" : "Auto from file" }),
+        el("span", { class: a.status === "present" ? "" : "muted", style: a.status === "present" ? "color:var(--bad)" : "",
+                     text: (a.status === "present" ? "✗ " : "✓ ") + a.note })));
+      const row = el("div", { class: `item s-${shown || "none"}` }, el("div", { class: "row1" }, q, seg));
+      if (s.status) {
+        const conf = el("div", { class: "conf" });
+        ["low", "moderate", "high"].forEach(c => conf.append(el("button", { type: "button", class: s.confidence === c ? "on" : "", text: c,
+          onclick: () => { s.confidence = c; renderChecklist(); markStale(); } })));
+        const note = el("input", { type: "text", placeholder: "What exactly did you see? (goes into the report)" });
+        note.value = s.note; note.oninput = () => { s.note = note.value; markStale(); };
+        row.append(el("div", { class: "row2" }, el("span", { class: "lbl", text: "Confidence" }), conf, note));
+      }
+      det.append(row);
+    });
+    box.append(det);
+  });
+  openAuto = false;
+  updateSummary();
+}
+
+function updateSummary() {
+  const list = items(), total = list.length;
+  const man = list.filter(i => state[i.indicator]?.status).length;
+  const au = list.filter(i => !state[i.indicator]?.status && auto[i.indicator]).length;
+  $("#progMan").style.width = `${100 * man / total}%`;
+  $("#progAuto").style.width = `${100 * au / total}%`;
+  $("#progTxt").textContent = `${man + au} of ${total} answered` + (au ? ` (${au} automatically)` : "");
+  const src = fileData ? fileData.name : sample ? "sample file" : "no file";
+  $("#sumTxt").replaceChildren(el("b", { text: String(man) }), " recorded by you · ",
+    el("b", { text: String(au) }), " automatic · ", el("b", { text: src }));
+}
+
+const drop = $("#drop"), fileInput = $("#file");
+drop.onclick = () => fileInput.click();
+drop.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); } };
+drop.ondragover = e => { e.preventDefault(); drop.classList.add("drag"); };
+drop.ondragleave = () => drop.classList.remove("drag");
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove("drag"); if (e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0]); };
+fileInput.onchange = () => fileInput.files[0] && readFile(fileInput.files[0]);
+
+function setDrop(t1, t2, has) {
+  $("#dropT1").textContent = t1; $("#dropT2").textContent = t2; drop.classList.toggle("has-file", has);
+}
+function fileChanged() { auto = {}; renderChecklist(); run(); }
+
+function readFile(f) {
+  if (f.size > 25 * 1024 * 1024) { $("#results").replaceChildren(el("div", { class: "error", text: "File is larger than 25 MB." })); return; }
+  const r = new FileReader();
+  r.onload = () => {
+    fileData = { name: f.name, data: r.result.split(",")[1] }; sample = "";
+    setDrop(f.name, `${(f.size / 1024).toFixed(1)} KB · checking…`, true);
+    fileChanged();
+  };
+  r.readAsDataURL(f);
+}
+function pickSample(key) {
+  sample = key; fileData = null; fileInput.value = "";
+  if (!key) { setDrop(...DROP_HINT, false); auto = {}; renderChecklist(); if (last) run(); return; }
+  $("#issueDate").value = "2023-06-15";
+  setDrop(key === "tampered_pdf" ? "Sample: tampered_certificate.pdf" : "Sample: genuine_certificate.pdf",
+          "Mock diploma certificate · issued 15-06-2023 · checking…", true);
+  fileChanged();
+}
+document.querySelectorAll("[data-sample]").forEach(b => b.onclick = () => pickSample(b.dataset.sample));
+$("#run").onclick = () => run();
+
+async function run() {
+  const btn = $("#run");
+  btn.disabled = true; btn.textContent = "Examining…";
+  if (!last) $("#results").replaceChildren(el("div", { class: "empty-state" }, el("div", { class: "spinner" }), el("div", { class: "big", text: "Running all checks…" })));
+  const body = {
+    case_id: $("#caseId").value, document_type: $("#docType").value,
+    stated_issue_date: $("#issueDate").value, expected_producer: $("#producer").value,
+    generated_on_demand: $("#onDemand").checked, examiner_name: $("#examiner").value,
+    findings: items().filter(i => state[i.indicator]?.status)
+      .map(i => ({ indicator: i.indicator, ...state[i.indicator] })),
+    file: fileData, sample,
+  };
+  try {
+    const res = await fetch("/api/examine", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Request failed");
+    auto = Object.fromEntries(data.machine_findings.map(f => [f.indicator, f]));
+    if (data.file_name) $("#dropT2").textContent = `${data.automated_checks.length} automatic checks run · ${data.automated_checks.filter(c => c.result === "flag").length} flagged`;
+    last = data; stale = false; openAuto = true;
+    renderChecklist();
+    renderResults();
+  } catch (err) {
+    $("#results").replaceChildren(el("div", { class: "error", text: err.message }));
+    last = null;
+  } finally {
+    btn.disabled = false; btn.textContent = last ? "Re-examine" : "Examine document";
+  }
+}
+
+function renderResults() {
+  const d = last, ev = d.evaluation, out = $("#results");
+  const pos = Math.max(2, Math.min(98, (ev.combined_log10_lr + 3) / 6 * 100));
+  out.replaceChildren();
+  const staleBox = el("div", { class: "stale", id: "staleBox" },
+    el("span", { text: "Observations changed since this result." }),
+    el("button", { class: "btn", type: "button", text: "Re-examine", onclick: () => run() }));
+  staleBox.hidden = !stale;
+  out.append(staleBox);
+  out.append(el("div", { class: `verdict ${d.verdict.level}` },
+    el("div", { class: "kicker", text: `Verdict · case ${d.case_id}` + (d.file_name ? ` · ${d.file_name}` : "") }),
+    el("div", { class: "label", text: d.verdict.label }),
+    el("div", { class: "concl", text: ev.verbal_conclusion }),
+    el("div", { class: "gauge" },
+      el("div", { class: "bar" }, el("div", { class: "mark", style: `left:${pos}%` })),
+      el("div", { class: "ends" }, el("span", { text: "Supports genuine" }), el("span", { text: "Neutral" }), el("span", { text: "Supports forged" }))),
+    el("div", { class: "facts", text: `Likelihood ratio ${ev.combined_lr.toLocaleString()} · triage score ${ev.triage_score}/100` })));
+
+  const nChecks = d.automated_checks.length + d.coverage.checklist_total;
+  const tabs = el("div", { class: "tabs", role: "tablist" });
+  [["summary", "Summary", null], ["checks", "All checks", nChecks], ["report", "Report", null]].forEach(([k, label, n]) =>
+    tabs.append(el("button", { type: "button", role: "tab", class: tab === k ? "on" : "", "aria-selected": String(tab === k),
+      onclick: () => { tab = k; renderResults(); } }, label, n != null ? el("span", { class: "n", text: n }) : null)));
+  out.append(tabs);
+  out.append(tab === "summary" ? summaryTab(d) : tab === "checks" ? checksTab(d) : reportTab(d));
+}
+
+function summaryTab(d) {
+  const ex = d.explanation, wrap = el("div");
+  wrap.append(el("div", { class: "tiles" },
+    el("div", { class: "tile bad" }, el("div", { class: "n", text: ex.why.length }), el("div", { class: "l", text: "Anomalies" })),
+    el("div", { class: "tile good" }, el("div", { class: "n", text: ex.consistent.length }), el("div", { class: "l", text: "Consistent with genuine" })),
+    el("div", { class: "tile acc" }, el("div", { class: "n", text: d.automated_checks.length }), el("div", { class: "l", text: "Automatic file checks" })),
+    el("div", { class: "tile warn" }, el("div", { class: "n", text: d.still_to_check.length }), el("div", { class: "l", text: "Key checks missing" }))));
+
+  wrap.append(el("div", { class: "sec" }, el("h3", { text: "Forgery type" }), el("span", { class: "type", text: d.classification.anomaly_type })));
+
+  const why = el("div", { class: "sec" }, el("h3", { text: "Why — what was found vs. what a genuine document shows" }));
+  if (!ex.why.length) why.append(el("div", { class: "muted", text: "No anomalies were recorded or detected." }));
+  ex.why.forEach(w => why.append(el("div", { class: "why" },
+    el("div", { class: "head" },
+      el("div", {}, el("div", { class: "t", text: w.check }), el("div", { class: "m", text: `${w.category} · points to ${w.points_to.toLowerCase()}` })),
+      el("div", { class: "x", text: `${Number(w.lr).toFixed(1)}× if forged` })),
+    el("div", { class: "cmp" },
+      el("div", { class: "found" }, el("span", { class: "k", text: "✗ Found" }), w.found),
+      el("div", { class: "real" }, el("span", { class: "k", text: "✓ Genuine shows" }), w.genuine)))));
+  wrap.append(why);
+
+  const todo = el("div", { class: "sec" }, el("h3", { text: "Still to check — missing high-value examinations" }));
+  if (!d.still_to_check.length) todo.append(el("div", { class: "muted", text: "All high-value checks for this document type are recorded." }));
+  else todo.append(el("ul", { class: "list" }, d.still_to_check.map(r => el("li", {}, el("span", { class: "ic todo", text: "○" }), el("span", { text: r.question })))));
+  wrap.append(todo);
+  wrap.append(el("div", { class: "sec", style: "padding-bottom:16px" },
+    el("button", { class: "btn small", type: "button", text: "Open full report →", onclick: () => { tab = "report"; renderResults(); } })));
+  return wrap;
+}
+
+function checksTab(d) {
+  const wrap = el("div");
+  const icon = { pass: ["✓", "ok", "Passed"], flag: ["✗", "bad", "Flagged"], info: ["i", "info", "Recorded"], skipped: ["–", "skip", "Skipped"] };
+  const autoSec = el("div", { class: "sec" }, el("h3", { text: `Automatic file checks (${d.automated_checks.length})` }));
+  if (!d.automated_checks.length) autoSec.append(el("div", { class: "muted", text: "No file added — add a PDF or image to run the automatic checks." }));
+  else autoSec.append(el("ul", { class: "list" }, d.automated_checks.map(c => {
+    const [ic, cls, word] = icon[c.result];
+    return el("li", {}, el("span", { class: `ic ${cls}`, text: ic }),
+      el("span", {}, el("b", { text: c.check }), ` — ${word}`, el("div", { class: "sub", text: c.detail })));
+  })));
+  wrap.append(autoSec);
+
+  const machine = Object.fromEntries(d.machine_findings.map(f => [f.indicator, f]));
+  const groups = {};
+  for (const it of META.checklists[last_doc_type()]) (groups[it.category] ||= []).push(it);
+  const man = el("div", { class: "sec", style: "padding-bottom:16px" },
+    el("h3", { text: `Examiner checklist (${d.coverage.examiner_recorded + d.coverage.auto_answered} of ${d.coverage.checklist_total} answered)` }));
+  Object.entries(groups).forEach(([cat, list]) => {
+    man.append(el("div", { class: "muted", style: "font-weight:600;margin-top:8px", text: cat }));
+    man.append(el("ul", { class: "list" }, list.map(it => {
+      const s = state[it.indicator]?.status, m = machine[it.indicator];
+      const st = s || m?.status || "";
+      const [ic, cls] = st === "present" ? ["✗", "bad"] : st === "absent" ? ["✓", "ok"] : ["○", "skip"];
+      const how = s ? "your observation" : m ? "automatic, from file" : "not checked";
+      return el("li", {}, el("span", { class: `ic ${cls}`, text: ic }),
+        el("span", {}, it.question, el("div", { class: "sub", text: how + (m && !s ? ` — ${m.note}` : state[it.indicator]?.note ? ` — ${state[it.indicator].note}` : "") })));
+    })));
+  });
+  wrap.append(man);
+  return wrap;
+}
+const last_doc_type = () => $("#docType").value;
+
+function download(name, content, type) {
+  const url = URL.createObjectURL(new Blob([content], { type }));
+  const a = el("a", { href: url, download: name });
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function reportTab(d) {
+  const wrap = el("div");
+  const frame = el("iframe", { class: "rep-frame", title: "Draft expert report", sandbox: "allow-same-origin allow-modals" });
+  frame.srcdoc = d.report_html;
+  wrap.append(el("div", { class: "rep-bar" },
+    el("button", { class: "btn small", type: "button", text: "Download .html", onclick: () => download(`${d.case_id}.html`, d.report_html, "text/html") }),
+    el("button", { class: "btn small ghost", type: "button", text: "Download .md", onclick: () => download(`${d.case_id}.md`, d.report_markdown, "text/markdown") }),
+    el("button", { class: "btn small ghost", type: "button", text: "Print / Save as PDF", onclick: () => frame.contentWindow.print() }),
+    el("span", { class: "muted", text: `Also saved on disk: ${d.report_path}` })));
+  wrap.append(frame);
+  return wrap;
+}
+
+init().catch(err => $("#results").replaceChildren(el("div", { class: "error", text: "Could not load: " + err.message })));
+</script>
+</body>
+</html>
